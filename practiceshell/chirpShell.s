@@ -24,18 +24,13 @@ loop:
     mov rdx, 1000
     syscall
 
-    # ugly hack
-    mov qword ptr [input_buffer], 0
-    # check to see if the command is whoami
-    mov rax, [input_buffer]
-    cmp rax, [whoami]
-    jne loop
 
-    # write(1, &jonas, 2)
+    # write(1, &command, 50)
+    mov rdx, rax
+    add rdx, 5
     mov rax, 1
     mov rdi, 1
-    mov rsi, offset jonas
-    mov rdx, 6
+    mov rsi, offset command
     syscall
     # return to start of event loop
     jmp loop
@@ -45,14 +40,17 @@ exit:
     mov rax, 60     # syscall exit
     syscall
 
+
 .section .data
 prompt:
     .string "> "
-input_buffer:
-    .space 1000
 jonas:
     .string "jonas\n"
-whoami:
-    .string "whoami\n"
+
+command:
+    .ascii "/bin/"
+input_buffer:
+    .space 1000
+
 
 .section .bss
