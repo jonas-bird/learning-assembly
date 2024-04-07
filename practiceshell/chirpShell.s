@@ -25,12 +25,15 @@ loop:
     syscall
 
 
+   mov BYTE PTR [input_buffer + rax - 1], 0
+
     # write(1, &command, 50)
-    mov rdx, rax
-    add rdx, 5
-    mov rax, 1
-    mov rdi, 1
-    mov rsi, offset command
+    # exec(59)
+
+    mov rax, 59
+    mov rdi, offset command
+    mov rsi, 0
+    mov rdx, 0
     syscall
     # return to start of event loop
     jmp loop
