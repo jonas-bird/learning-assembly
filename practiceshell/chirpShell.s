@@ -10,13 +10,6 @@ _start:
 loop:
     nop
 
-    mov rax, 10000000
-l0:
-    dec rax
-    cmp rax, 0
-    jne l0
-
-
     # print prompt write(1, &prompt, 2)
     mov rax, 1
     mov rdi, 1
@@ -48,7 +41,7 @@ end1:
     syscall
 
     cmp rax, 0
-    jne loop
+    jne parent
 
     # exec(59)
     # int execve(const char *pathname, char *const argv[], char *const envp[]);
@@ -59,11 +52,22 @@ end1:
     syscall
 
 exit:
-    // Exit 0
-    mov rdi, 0      # return code
+    // Exit 1
+    mov rdi, 1      # return code
     mov rax, 60     # syscall exit
     syscall
 
+parent:
+    # pid_t waitpid(pid_t pid, int *wstatus, int options);
+    mov rax, 61
+    # -1 means wait for any child process
+    mov rdi, -1
+    mov rsi, 0
+    mov rdx, 0
+    syscall
+
+    # back to start once eveything has run
+    jmp loop
 
 .section .data
 prompt:
