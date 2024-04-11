@@ -9,6 +9,7 @@ _start:
     nop
 loop:
     nop
+
     # print prompt write(1, &prompt, 2)
     mov rax, 1
     mov rdi, 1
@@ -24,35 +25,58 @@ loop:
     mov rdx, 1000
     syscall
 
-    # ugly hack
-    mov qword ptr [input_buffer], 0
-    # check to see if the command is whoami
-    mov rax, [input_buffer]
-    cmp rax, [whoami]
-    jne loop
+# replace newline with NULL byte
+l1:
+    mov al, [rsi]
+    cmp al, '\n'
+    je end1
+    inc rsi
+    jmp l1
+end1:
+    mov byte ptr [rsi], 0
 
-    # write(1, &jonas, 2)
-    mov rax, 1
-    mov rdi, 1
-    mov rsi, offset jonas
-    mov rdx, 6
+
+    # pid_t fork(void);
+    mov rax, 57
     syscall
-    # return to start of event loop
-    jmp loop
+
+    cmp rax, 0
+    jne parent
+
+    # exec(59)
+    # int execve(const char *pathname, char *const argv[], char *const envp[]);
+    mov rax, 59
+    mov rdi, offset command
+    mov rsi, 0
+    mov rdx, 0
+    syscall
+
 exit:
-    // Exit 0
-    mov rdi, 0      # return code
+    // Exit 1
+    mov rdi, 1      # return code
     mov rax, 60     # syscall exit
+
     syscall
+
+parent:
+    # pid_t waitpid(pid_t pid, int *wstatus, int options);
+    mov rax, 61
+    # -1 means wait for any child process
+    mov rdi, -1
+    mov rsi, 0
+    mov rdx, 0
+    syscall
+
+    # back to start once eveything has run
+    jmp loop
 
 .section .data
 prompt:
     .string "> "
+command:
+    .ascii "/bin/"
 input_buffer:
     .space 1000
-jonas:
-    .string "jonas\n"
-whoami:
-    .string "whoami\n"
+
 
 .section .bss
