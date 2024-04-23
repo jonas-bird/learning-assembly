@@ -47,6 +47,7 @@ listen:
         cmp rax, 0
         jne error
 
+eventLoop:
 #  int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 accept:
         mov rax, 0x2b           # syscall for accept is 0x2b
@@ -56,6 +57,17 @@ accept:
         syscall
         mov r13, rax            # stow away our new fd
 
+fork:
+    mov rax, 57    # fork syscall
+    syscall
+    cmp rax, 0
+    jne parent
+
+child:
+
+        mov rax, 3              # syscall for close(fd)
+        mov rdi, r12            # move fd from accept into arg1
+        syscall
 # ssize_t read(int fd, void *buf, size_t count);
 readRequest:
         mov rax, 0x0            # syscall for read
@@ -89,7 +101,7 @@ insertNULL:
       mov byte ptr [rsi], 0    # NULL terminate the path portion of the http request
 
 openFileSyscall:
-    mov rsi, 0
+    mov rsi, O_RDONLY
     mov rax, 2
     syscall
     mov r14, rax       # hopefully I dont run out of callee preserved buffers for file descruptors...
@@ -129,11 +141,22 @@ close:
         mov rdi, r13            # move fd from accept into arg1
         syscall
 
+nextEvent:
+    jmp exit
+
+
+parent:
+        mov rax, 3              # syscall for close(fd)
+        mov rdi, r13            # move fd from accept into arg1
+        syscall
+        jmp eventLoop
 
 exit:
         mov rdi, 0              # return code
         mov rax, 60             # syscall exit
         syscall
+
+
 
 error:
         mov rdi, 1              # return code for error
